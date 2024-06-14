@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.19
+FROM docker.io/library/golang:1.22-alpine
 
 WORKDIR /opt/app-root/src
 

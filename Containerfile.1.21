@@ -16,4 +16,4 @@ RUN echo "127.0.0.1 localhost" > /etc/hosts
 
 USER 65532:65532
 
-CMD bash test.sh
+CMD sh test.sh
