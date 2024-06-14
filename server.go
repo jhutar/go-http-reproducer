@@ -16,7 +16,7 @@ func main() {
 	// Create a server on port 8000
 	// Exactly how you would run an HTTP/1.1 server
 	http2Server := http2.Server{
-		MaxReadFrameSize: 512000,
+		MaxReadFrameSize: 16384,
 	}
 
 	srv := &http.Server{Addr: ":8000", Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2Server)}
@@ -30,6 +30,7 @@ func main() {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	count := 0
+	size := 0
 	readStartTime := time.Now()
 	defer func() {
 		readEndTime := time.Now()
@@ -48,7 +49,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		n, err := r.Body.Read(buf)
 		if err != nil {
 			if err == io.EOF {
-				fmt.Println(bodyBuffer.Len())
+				fmt.Println("Request size:", size)
 				return
 			} else {
 				panic(fmt.Errorf("error while reading body %s", err.Error()))
@@ -59,6 +60,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		if httpReadDuration.Seconds() > 3 {
 			fmt.Println(fmt.Sprintf("GGMGGM18 HandleStream read loop single iter count %d time %s ts %d.%09d req obj %#v", count, httpReadDuration.String(), httpReadEnd.Unix(), httpReadEnd.Nanosecond(), r))
 		}
+		size += n
+
 		if n > 0 {
 			buf = buf[n:]
 			_, err := bodyBuffer.Write(buf)
@@ -74,8 +77,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		allocBufDuration := time.Now().Sub(allocBufStart)
 		if allocBufDuration.Seconds() > 3 {
-			fmt.Println(fmt.Sprintf("GGMGGM18 HandleStream read loop make buf single iter count %d time %s ts %d.%09d", count, httpReadDuration.String()))
+			fmt.Println(fmt.Sprintf("GGMGGM19 HandleStream read loop make buf single iter count %d time %s ts %d.%09d", count, httpReadDuration.String()))
 		}
 	}
-
 }

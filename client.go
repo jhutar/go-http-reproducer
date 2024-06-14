@@ -52,19 +52,26 @@ func doRequest(client *http.Client, method string, serverURL string, payload *by
 }
 
 // Function to perform the request and update counters
-func doRequestWithWaitGroup(tlsConfig *tls.Config, serverURL string, payloadSize int, wg *sync.WaitGroup) {
+func doRequestThread(iterationsCount int, tlsConfig *tls.Config, serverURL string, payloadSize int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	// Configure transport to enable HTTP/2
+	tr := &http2.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: tr}
+
+	for i := 0; i < iterationsCount; i++ {
+		doRequestOne(client, serverURL, payloadSize)
+	}
+}
+
+// Function to perform one request
+func doRequestOne(client *http.Client, serverURL string, payloadSize int) {
 	// Create random payload
 	payload := make([]byte, payloadSize)
 	_, err := rand.Read(payload)
 	if err != nil {
 		panic(err)
 	}
-
-	// Configure transport to enable HTTP/2
-	tr := &http2.Transport{TLSClientConfig: tlsConfig}
-	client := &http.Client{Transport: tr}
 
 	duration, err := doRequest(client, http.MethodPost, serverURL, bytes.NewReader(payload))
 	if err != nil {
@@ -90,6 +97,9 @@ func main() {
 	// Number of requests to do
 	requestsCount := 100
 
+	// Number of iterations
+	iterationsCount := 10
+
 	// Create a pool with the server certificate since it is not signed
 	// by a known CA
 	caCert, err := ioutil.ReadFile("server.crt")
@@ -108,10 +118,11 @@ func main() {
 
 	for i := 1; i <= requestsCount; i++ {
 		wg.Add(1)
-		go doRequestWithWaitGroup(tlsConfig, serverURL, payloadSize, &wg)
+		go doRequestThread(iterationsCount, tlsConfig, serverURL, payloadSize, &wg)
 	}
 
 	wg.Wait()
 
+	log.Printf("Requests count: %d", durationCounter)
 	log.Printf("Average duration: %f", durationTotal / float64(durationCounter))
 }
