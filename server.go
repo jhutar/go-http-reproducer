@@ -6,14 +6,11 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sync"
 	"time"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
-
-var mu sync.Mutex
 
 func main() {
 	// Create a server on port 8000
@@ -32,8 +29,6 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	mu.Lock()
-	defer mu.Unlock()
 	count := 0
 	readStartTime := time.Now()
 	defer func() {
