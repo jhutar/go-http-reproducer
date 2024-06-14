@@ -10,6 +10,10 @@ RUN go mod vendor
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o server server.go
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o client client.go
 
+USER root
+
+RUN echo "127.0.0.1 localhost" > /etc/hosts
+
 USER 65532:65532
 
 CMD bash test.sh
