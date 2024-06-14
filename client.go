@@ -95,10 +95,10 @@ func main() {
 	payloadSize := 10000
 
 	// Number of requests to do
-	requestsCount := 100
+	requestsCount := 5000
 
 	// Number of iterations
-	iterationsCount := 10
+	iterationsCount := 1
 
 	// Create a pool with the server certificate since it is not signed
 	// by a known CA

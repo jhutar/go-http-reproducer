@@ -24,10 +24,12 @@ And client:
     2024/06/11 16:11:14 Request finished with status 200 and took 100.601µs
     2024/06/11 16:11:14 Average duration: 0.000299
 
-To run the test in UBI9 container with Go 1.19:
+To run the test in UBI9 container:
 
-    $ podman build -f Containerfile . -t go-http-reproducer
-    $ podman run -ti --rm go-http-reproducer
+    $ podman build -f Containerfile.1.19 . -t go-http-reproducer:1-19
+    $ podman build -f Containerfile.1.21 . -t go-http-reproducer:1-21
+    $ podman run -ti --rm go-http-reproducer:1-19
+    $ podman run -ti --rm go-http-reproducer:1-21
 
 Because HTTP/2 needs TLS, we generated certificate with (cert is part of the repo):
 
