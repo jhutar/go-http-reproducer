@@ -9,7 +9,9 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+	"strconv"
 	"sync"
+	"os"
 
 	"golang.org/x/net/http2"
 )
@@ -17,8 +19,10 @@ import (
 var (
 	durationTotal     float64
 	durationCounter   int
+	failuresCounter   int
 	durationTotalMutex sync.Mutex
 	durationCounterMutex sync.Mutex
+	failuresCounterMutex sync.Mutex
 )
 
 func doRequest(client *http.Client, method string, serverURL string, payload *bytes.Reader) (float64, error) {
@@ -75,10 +79,14 @@ func doRequestOne(client *http.Client, serverURL string, payloadSize int) {
 
 	duration, err := doRequest(client, http.MethodPost, serverURL, bytes.NewReader(payload))
 	if err != nil {
-		panic(err)
+		log.Printf("Request failed: %+v", err)
+		failuresCounterMutex.Lock()
+		defer failuresCounterMutex.Unlock()
+		failuresCounter++
+		return
 	}
 
-	// Update counters within the goroutine
+	// Update counters for successful run
 	durationTotalMutex.Lock()
 	defer durationTotalMutex.Unlock()
 	durationTotal += duration
@@ -92,13 +100,34 @@ func main() {
 	serverURL := "https://localhost:8000"
 
 	// Payload size in bytes
-	payloadSize := 10000
+	var payloadSize int
+	// Number of requests emmiting threads to start
+	var threadsCount int
+	// Number of requests/iterations in each thread
+	var iterationsCount int
 
-	// Number of requests to do
-	requestsCount := 5000
+	var err error
 
-	// Number of iterations
-	iterationsCount := 1
+	if len(os.Args) == 4 {
+		payloadSize, err = strconv.Atoi(os.Args[1])
+		if err != nil {
+			log.Fatalf("Error converting payloadSize to integer:", err)
+			return
+		}
+		threadsCount, err = strconv.Atoi(os.Args[2])
+		if err != nil {
+			log.Fatalf("Error converting threadsCount to integer:", err)
+			return
+		}
+		iterationsCount, err = strconv.Atoi(os.Args[3])
+		if err != nil {
+			log.Fatalf("Error converting iterationsCount to integer:", err)
+			return
+		}
+	} else {
+		log.Fatalf("Usage: client <payloadSize> <threadsCount> <iterationsCount>")
+		return
+	}
 
 	// Create a pool with the server certificate since it is not signed
 	// by a known CA
@@ -116,13 +145,14 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	for i := 1; i <= requestsCount; i++ {
+	for i := 1; i <= threadsCount; i++ {
 		wg.Add(1)
 		go doRequestThread(iterationsCount, tlsConfig, serverURL, payloadSize, &wg)
 	}
 
 	wg.Wait()
 
-	log.Printf("Requests count: %d", durationCounter)
-	log.Printf("Average duration: %f", durationTotal / float64(durationCounter))
+	log.Printf("Requests count: %d (%d failed)", durationCounter + failuresCounter, failuresCounter)
+	log.Printf("Failure rate: %.5f", float64(failuresCounter) / float64(durationCounter + failuresCounter))
+	log.Printf("Successful average duration: %f", durationTotal / float64(durationCounter))
 }
