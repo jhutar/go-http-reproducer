@@ -25,9 +25,9 @@ echo '"time","image","threadsCount","iteration","error rate","average duration"'
 
 for image in go-http-reproducer:1-19 go-http-reproducer:1-21 go-http-reproducer:1-22; do
     for threadsCountK in $( seq 1 20 ); do
-        for iteration in $( seq 1 3 ); do
+        for iteration in $( seq 1 5 ); do
             echo "=== threadsCount:${threadsCountK}000 iteration:${iteration} ==="
-            output="$( podman run -e payloadSize=10000 -e threadsCount=${threadsCountK}000 -e iterationsCount=10 -ti --rm "$image" 2>&1 | tail -n 3)"
+            output="$( podman run -e payloadSize=10000 -e threadsCount=${threadsCountK}000 -e iterationsCount=1 -ti --rm "$image" 2>&1 | tail -n 3)"
             echo "$output"
             error_rate="$( echo "$output" | grep "Failure rate" | cut -d : -f 4 | sed "s/\s*\([0-9.]\+\)\s*/\1/" )"
             avg_duration="$( echo "$output" | grep "Successful average duration" | cut -d : -f 4 | sed "s/\s*\([0-9.]\+\)\s*/\1/" )"
