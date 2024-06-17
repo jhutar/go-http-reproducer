@@ -2,7 +2,7 @@
 
 ./server &
 
-payloadSize=10000
-threadsCount=100
-iterationsCount=10
+payloadSize=${payloadSize:-10000}
+threadsCount=${threadsCount:-100}
+iterationsCount=${iterationsCount:-10}
 ./client $payloadSize $threadsCount $iterationsCount
